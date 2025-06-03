@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InvestSchool: Increasing Learning Engagement</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Refined Slate & Sky with Energetic Accents -->
+    <!-- Application Structure Plan: A single-page dashboard with top navigation (`Overview`, `Diagnosis`, `Segments`, `Solutions`, `Summary`). This structure creates a narrative flow. Overview includes the problem statement and funnel chart. Diagnosis uses interactive cards. Segments use tabs. Solutions use toggles. Summary recaps the case. Professional theme with subtle gamification through engaging animations and clear interactive feedback. -->
+    <!-- Visualization & Content Choices: 
+        1. User Drop-off Funnel (Overview): Goal=Inform. Viz=Chart.js Bar Chart (styled as funnel). Interaction=None. Justification=Visualizes core problem.
+        2. Problem Diagnosis Cards (Diagnosis): Goal=Organize/Relate. Method=HTML/Tailwind cards + JS toggle. Interaction=Click to reveal details. Justification=Connects reasons to data analysis. Enhanced hover/reveal animations. Professional icons.
+        3. User Segments Tabs (Segments): Goal=Compare. Method=HTML/Tailwind tabs + JS content switching. Interaction=Click tab. Content fades in. Justification=Easy comparison of personas.
+        4. Experiment Details (Solutions): Goal=Compare/Inform. Method=HTML/Tailwind layout + JS toggle. Interaction=Buttons to switch. Content fades in. Justification=Structured presentation of solutions.
+        5. Summary Section (Summary): Goal=Summarize. Method=HTML/Tailwind text layout. Interaction=None. Justification=Provides a quick recap of the entire case study.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body { font-family: 'Inter', sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+        .nav-link { transition: color 0.3s, border-color 0.3s, background-color 0.3s; }
+        .nav-link.active { 
+            color: #0284c7; /* sky-600 */
+            border-bottom-color: #0284c7; /* sky-600 */
+            font-weight: 700;
+        }
+        .nav-link:hover:not(.active) {
+            color: #0369a1; /* sky-700 */
+            border-bottom-color: #7dd3fc; /* sky-300 */
+        }
+        
+        .page-section {
+            opacity: 0;
+            transform: translateY(25px);
+            transition: opacity 0.55s ease-out, transform 0.55s ease-out;
+        }
+        .page-section.active-section {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .reason-card { 
+            transition: transform 0.35s ease-out, box-shadow 0.35s ease-out, border-color 0.35s ease-out; 
+            opacity: 0;
+            transform: scale(0.93);
+            animation: fadeInScale 0.55s ease-out forwards;
+            border: 1px solid transparent;
+        }
+        .reason-card:hover { 
+            transform: translateY(-6px) scale(1.01); 
+            box-shadow: 0 12px 25px -8px rgba(0, 0, 0, 0.12), 0 5px 10px -6px rgba(0, 0, 0, 0.08);
+            border-color: #bae6fd; /* sky-200 */
+        }
+        @keyframes fadeInScale {
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        .details-panel { 
+            max-height: 0; 
+            overflow: hidden; 
+            transition: max-height 0.65s cubic-bezier(0.45, 0, 0.2, 1), opacity 0.45s ease-in-out, transform 0.45s ease-in-out;
+            opacity: 0;
+            transform: translateY(-12px);
+        }
+        .details-panel.open { 
+            max-height: 700px; 
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .segment-content-item, .experiment-content-item, .summary-content-item {
+            opacity: 0;
+            animation: fadeInItem 0.6s ease-out forwards;
+        }
+        @keyframes fadeInItem {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .chart-container { position: relative; width: 100%; max-width: 750px; margin-left: auto; margin-right: auto; height: 380px; max-height: 480px; }
+        @media (min-width: 768px) { .chart-container { height: 420px; } }
+
+        .tab-button.active {
+            border-color: #0284c7; /* sky-600 */
+            color: #0284c7; /* sky-600 */
+            background-color: #f0f9ff; /* sky-50 */
+            font-weight: 600;
+        }
+        .solution-button.active {
+            background-color: #0ea5e9; /* sky-500 */
+            color: white;
+            box-shadow: 0 4px 14px 0 rgba(14, 165, 233, 0.39);
+        }
+        .solution-button {
+            transition: background-color 0.3s, color 0.3s, transform 0.2s, box-shadow 0.3s;
+        }
+        .solution-button:hover:not(.active) {
+            background-color: #f0f9ff; /* sky-50 */
+            color: #0ea5e9; /* sky-500 */
+            transform: translateY(-2px);
+        }
+        .details-toggle-btn .arrow { transition: transform 0.3s; }
+        .details-toggle-btn .arrow.rotate-180 { transform: rotate(180deg); }
+
+        .professional-icon {
+            font-size: 1.75rem; /* text-3xl */
+            color: #0ea5e9; /* sky-500 */
+            line-height: 1;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased">
+
+    <div id="app" class="container mx-auto p-4 md:p-8 max-w-7xl">
+        
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 tracking-tight">InvestSchool Engagement Strategy</h1>
+            <p class="text-slate-600 mt-4 text-lg md:text-xl">An Interactive Deep Dive into User Retention Challenges & Solutions</p>
+        </header>
+
+        <nav class="sticky top-0 bg-slate-50/80 backdrop-blur-lg z-50 mb-12 shadow-md rounded-xl">
+            <div class="flex justify-center space-x-1 sm:space-x-2 md:space-x-4">
+                <button data-target="overview" class="nav-link text-slate-700 font-semibold py-4 px-2 sm:px-3 md:px-5 border-b-4 border-transparent">Overview</button>
+                <button data-target="diagnosis" class="nav-link text-slate-700 font-semibold py-4 px-2 sm:px-3 md:px-5 border-b-4 border-transparent">Diagnosis</button>
+                <button data-target="segments" class="nav-link text-slate-700 font-semibold py-4 px-2 sm:px-3 md:px-5 border-b-4 border-transparent">Segments</button>
+                <button data-target="solutions" class="nav-link text-slate-700 font-semibold py-4 px-2 sm:px-3 md:px-5 border-b-4 border-transparent">Solutions</button>
+                <button data-target="summary" class="nav-link text-slate-700 font-semibold py-4 px-2 sm:px-3 md:px-5 border-b-4 border-transparent">Summary</button>
+            </div>
+        </nav>
+
+        <main>
+            <section id="overview" class="page-section">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">The Engagement Challenge: Setting the Scene</h2>
+                    <div class="max-w-4xl mx-auto text-slate-700 text-lg leading-relaxed space-y-4">
+                        <p><strong class="font-semibold text-slate-800">Context:</strong> InvestSchool is a stock market learning app for Gen Z, focusing on bite-sized content, quizzes, practice tools, and virtual trading. The "Learning Journey" feature guides users through stock metrics, testing, and simulated practice.</p>
+                        <p><strong class="font-semibold text-slate-800">Problem Statement:</strong> A significant drop-off in user engagement is observed after the first 2–3 Learning Journeys, despite strong initial signups and completion of the first journey. Many users don't return to start subsequent journeys.</p>
+                        <p>This interactive dashboard delves into the 'why' behind this drop-off and proposes data-driven experiments to foster sustained learning. The chart below starkly visualizes this engagement funnel.</p>
+                    </div>
+                </div>
+                <div class="bg-white p-6 sm:p-8 rounded-xl shadow-xl">
+                     <div class="chart-container">
+                        <canvas id="funnelChart"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <section id="diagnosis" class="page-section">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Why Are Users Leaving? Unpacking Potential Reasons</h2>
+                    <p class="mt-2 text-slate-700 max-w-3xl mx-auto text-lg leading-relaxed">Multiple factors could be contributing to this drop-off. This section dissects leading hypotheses. Click on any potential reason to explore its nuances and the data points needed for validation.</p>
+                </div>
+                <div id="reasons-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
+                </div>
+            </section>
+
+            <section id="segments" class="page-section">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Understanding Our Diverse Learners: User Segmentation</h2>
+                    <p class="mt-2 text-slate-700 max-w-3xl mx-auto text-lg leading-relaxed">To effectively address engagement, we must recognize that our Gen Z audience isn't monolithic. Segmenting users based on their behaviors and motivations can reveal tailored insights. Select a segment to explore its characteristics.</p>
+                </div>
+                <div class="bg-white p-6 sm:p-8 rounded-xl shadow-xl">
+                    <div id="segment-tabs" class="flex flex-wrap justify-center border-b border-slate-300 mb-8 gap-2 md:gap-4">
+                    </div>
+                    <div id="segment-content-container" class="min-h-[300px]">
+                    </div>
+                </div>
+            </section>
+
+            <section id="solutions" class="page-section">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Pathways to Engagement: Proposed Experiments</h2>
+                    <p class="mt-2 text-slate-700 max-w-3xl mx-auto text-lg leading-relaxed">Based on our diagnostic insights, we propose two A/B tests designed to make the InvestSchool learning experience more personalized, motivating, and habit-forming. Explore each experiment's details below.</p>
+                </div>
+                <div class="bg-white rounded-xl shadow-xl overflow-hidden">
+                    <div class="p-6 sm:p-8">
+                        <div class="flex flex-col sm:flex-row justify-center items-center space-y-3 sm:space-y-0 sm:space-x-4 mb-10">
+                            <button id="exp1-btn" class="solution-button w-full sm:w-auto px-8 py-3.5 text-md font-semibold rounded-lg shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-400">Experiment 1: Personalization & Goals</button>
+                            <button id="exp2-btn" class="solution-button w-full sm:w-auto px-8 py-3.5 text-md font-semibold rounded-lg shadow-sm hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-sky-400">Experiment 2: Gamified Streaks</button>
+                        </div>
+                        <div id="experiment-content-container" class="min-h-[400px]"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="summary" class="page-section">
+                <div class="text-center mb-12">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Case Study Recap: Charting the Course Forward</h2>
+                    <p class="mt-2 text-slate-700 max-w-3xl mx-auto text-lg leading-relaxed">This analysis has dissected the user engagement challenge at InvestSchool and proposed actionable strategies. Here's a consolidated overview of our findings and the recommended path to foster sustained learning.</p>
+                </div>
+                <div id="summary-content-container" class="bg-white p-6 sm:p-10 rounded-xl shadow-xl">
+                </div>
+            </section>
+        </main>
+
+        <footer class="text-center mt-20 py-10 border-t border-slate-300">
+            <p class="text-slate-500 text-sm">&copy; InvestSchool Interactive Case Analysis. For demonstration purposes.</p>
+        </footer>
+    </div>
+
+    <script>
+        const appData = {
+            problemStatementFull: "InvestSchool is a stock market learning app designed to help Gen Z users learn how to make stock decisions through bite-sized content, quizzes, practice tools, and virtual trading. One of our key features is the 'Learning Journey'—a guided flow where users learn about stock metrics (like P/E, EPS, ROE), test themselves, and practice with real stocks in a simulated environment. We’re noticing a drop-off in user engagement after the first 2–3 Learning Journeys. While initial signups are strong and users complete their first journey, many don't return to start the next ones.",
+            diagnosis: [
+                 {
+                    title: "Content Overwhelm / Difficulty Spike",
+                    icon: "📖", // Unicode for open book
+                    summary: "Initial journeys might be engaging and simple, but later content could become too complex too quickly. Users might feel the perceived effort outweighs the perceived benefit as topics get harder, leading to cognitive overload.",
+                    details: [
+                        { point: "Funnel Analysis", desc: "Track progression rates and drop-off points between specific journeys and modules. Identify if difficulty spikes correlate with drop-offs." },
+                        { point: "Content Interaction", desc: "Analyze time spent on specific lessons, quiz performance (scores, attempts, specific questions failed). Are later modules taking disproportionately longer or seeing higher failure rates?" },
+                        { point: "User Feedback (Surveys/Interviews)", desc: "Collect qualitative data on perceived difficulty, clarity of explanations, and feelings of being overwhelmed after specific journeys." }
+                    ]
+                },
+                {
+                    title: "Lack of Perceived Value or Real-World Application",
+                    icon: "🎯", // Unicode for target / bullseye
+                    summary: "Users, especially Gen Z, need to see the immediate relevance of what they're learning. If later-stage topics don't clearly connect to their virtual trading goals or real-world understanding, motivation wanes.",
+                    details: [
+                        { point: "In-App Behavior", desc: "Track if users are applying concepts learned in later journeys within the virtual trading simulator. Is there a disconnect?" },
+                        { point: "Navigation Paths Post-Journey", desc: "Where do users navigate if they don't start the next journey? Do they abandon learning for pure simulation, or exit?" },
+                        { point: "Virtual Trading Data", desc: "Correlate journey completion with virtual trading activity, confidence levels (if measurable), and types of stocks/strategies explored." },
+                        { point: "User Surveys", desc: "Ask users about the perceived usefulness of specific metrics/topics and their ability to apply them." }
+                    ]
+                },
+                {
+                    title: "Poor User Experience in Later Stages",
+                    icon: "🖥️", // Unicode for desktop computer (representing interface)
+                    summary: "While initial UX might be polished, later stages could suffer from navigational difficulties, bugs, performance issues, or less engaging content formats (e.g., too much text, insufficient interactivity).",
+                    details: [
+                        { point: "Navigation Paths & Heatmaps", desc: "Identify user flows for later journeys. Are there dead ends, confusing navigation, or high exit rates on specific screens?" },
+                        { point: "Content Interaction Metrics", desc: "Compare engagement with different content types (videos, articles, quizzes) in early vs. late journeys. Are later modules relying on less popular formats?" },
+                        { point: "Technical Performance Monitoring", desc: "Track load times, error rates, and crashes, especially in more complex later modules or the simulator." },
+                        { point: "User Feedback", desc: "Analyze support tickets, app store reviews, and forum posts for mentions of UX frustrations, bugs, or confusing elements." }
+                    ]
+                },
+                {
+                    title: "Time Commitment & Competing Priorities",
+                    icon: "⏳", // Unicode for hourglass
+                    summary: "Gen Z users often have limited attention spans and juggle many interests. If later journeys demand significantly more time or if the initial curiosity is satisfied, they may de-prioritize the app.",
+                    details: [
+                        { point: "Session Data Analysis", desc: "Compare session length, frequency, and time-to-complete for users who progress versus those who drop off at later stages." },
+                        { point: "Funnel Analysis (Time-based)", desc: "Measure the average time taken to complete each journey. Do later journeys show a sharp increase in required commitment?" },
+                        { point: "User Surveys/Interviews", desc: "Ask about their available time for learning, competing apps/activities, and whether the time investment feels justified by the learning outcome." }
+                    ]
+                },
+                {
+                    title: "Lack of Personalization or Relevance",
+                    icon: "🎨", // Unicode for artist palette (representing tailoring/customization)
+                    summary: "A one-size-fits-all learning path might not cater to diverse user interests (e.g., specific industries, investment styles) or varying paces of learning. Users may disengage if content doesn't feel tailored.",
+                    details: [
+                        { point: "In-App Behavior (Feature Usage)", desc: "Analyze interaction with different stock types, sectors, or news categories within the app. Can we infer interests?" },
+                        { point: "Search Query Analysis (if applicable)", desc: "What are users searching for within the app? Does it indicate unmet learning needs?" },
+                        { point: "User Feedback", desc: "Directly ask users if they'd prefer more personalized learning paths or content recommendations based on their goals or interests." },
+                        { point: "A/B Testing (Content Variations)", desc: "Experiment with offering slightly different content modules based on initial user choices or quiz performance." }
+                    ]
+                },
+                {
+                    title: "Insufficient Motivation & Rewards",
+                    icon: "🌟", // Unicode for star (representing rewards/achievements)
+                    summary: "The initial 'hook' of completing the first journey might provide a sense of accomplishment, but if subsequent milestones lack adequate rewards, recognition, or a sense of progress, motivation can dwindle.",
+                    details: [
+                        { point: "Funnel Analysis (Milestone Mapping)", desc: "Identify points in the journey where explicit rewards or recognition are absent, and see if these correlate with drop-offs." },
+                        { point: "User Surveys/Interviews", desc: "Ask users what kind of rewards, challenges, or social elements would motivate them to continue learning." },
+                        { point: "Engagement with Existing Gamification", desc: "If any gamified elements exist (badges, points), analyze their uptake and impact on progression." },
+                        { point: "A/B Test Results (Notifications/Rewards)", desc: "Review any past experiments related to motivational nudges, notifications, or reward systems." }
+                    ]
+                }
+            ],
+            segments: [
+                {
+                    id: "achievers",
+                    name: "High Achievers vs. Strugglers",
+                    desc: "This segmentation is based on early journey performance: quiz scores, speed of completion, and number of attempts in the first 1-2 journeys. 'High Achievers' grasp concepts quickly, while 'Strugglers' may find the initial content challenging.",
+                    rationale: "Understanding this distinction is crucial. Strugglers might be dropping off due to increasing difficulty or feeling overwhelmed. High Achievers, conversely, might disengage due to boredom, a perceived lack of challenge in subsequent content, or feeling they've learned 'enough' for their immediate needs. Tailoring support for strugglers (e.g., remedial content, slower pace) and challenge for high achievers (e.g., advanced tracks, faster progression) could be key."
+                },
+                {
+                    id: "learners",
+                    name: "Goal-Oriented Learners vs. Explorers",
+                    desc: "This segmentation differentiates users based on their learning intent, which can be gauged from initial surveys (if available), stated goals, or early feature usage. 'Goal-Oriented Learners' have specific objectives (e.g., 'learn to invest for long-term growth,' 'understand crypto'). 'Explorers' are more curiosity-driven, browsing broadly without a fixed agenda.",
+                    rationale: "Goal-oriented learners might drop off if later journeys diverge from their specific objectives or if they don't see a clear path to achieving their stated goal. Explorers might lose interest if the novelty wears off, the learning path becomes too rigid, or they don't find sufficiently engaging 'nuggets' of information. Offering flexible pathways or topic-based modules could cater to both."
+                },
+                {
+                    id: "scanners",
+                    name: "Quick Scanners vs. Deep Divers",
+                    desc: "This segmentation is based on how users consume content, specifically the average time they spend on individual learning modules (videos, articles) within the initial journeys. 'Quick Scanners' prefer to get the gist quickly, while 'Deep Divers' engage more thoroughly with the material.",
+                    rationale: "Quick Scanners might find later, more detailed or lengthy content modules too demanding and time-consuming, leading to drop-off. Deep Divers might be more resilient to content length but could still disengage if the quality, depth, or interactivity isn't maintained in advanced topics. Varying content formats or offering summaries alongside detailed explanations could address these different consumption styles."
+                }
+            ],
+            solutions: {
+                exp1: {
+                    title: "Personalized 'Next Step' Recommendations & Goal Setting",
+                    hypothesis: "Providing users with personalized recommendations for their next learning journey based on their interests (self-declared or inferred from behavior) and allowing them to set explicit learning goals will increase intrinsic motivation, relevance, and progression to subsequent journeys.",
+                    target: "All users completing Journey 2 or 3. Particularly beneficial for 'Goal-Oriented Learners' and users who show varied interests in the virtual trading section or specific content types.",
+                    metrics: [
+                        "<strong>Primary:</strong> Percentage of users starting a *recommended* next journey within 7 days of completing their previous one.",
+                        "<strong>Secondary:</strong> Overall journey completion rate for Journeys 3+ (comparing personalized vs. linear path groups).",
+                        "<strong>Secondary:</strong> User-reported satisfaction with journey relevance (via a short post-recommendation survey: 'How relevant was this recommendation to your interests?').",
+                        "<strong>Secondary:</strong> Number of learning goals set and achieved (if goal-setting feature is part of the experiment)."
+                    ],
+                    implementation: [
+                        "<strong>Interest Tagging:</strong> After Journey 2, prompt users to select 1-3 areas of interest (e.g., 'Tech Stocks,' 'Dividend Investing,' 'Ethical Investing,' 'Understanding Economic Indicators,' 'Crypto Basics').",
+                        "<strong>Behavioral Inference:</strong> Supplement self-declared interests with data from virtual trading (e.g., frequently viewed/traded stocks/sectors) or most engaged-with content topics.",
+                        "<strong>Personalized Path UI:</strong> Instead of a purely linear 'Next Journey,' the screen shows 2-3 recommended journey options, clearly highlighting why each is recommended (e.g., 'Based on your interest in Tech Stocks').",
+                        "<strong>Goal Setting Module (Optional Add-on):</strong> Allow users to set a specific, measurable, achievable, relevant, time-bound (SMART) goal, e.g., 'I want to confidently analyze 3 tech stocks by [date]' or 'Understand how interest rates affect my portfolio within 2 weeks.' The app could then suggest a sequence of journeys or modules to achieve this."
+                    ],
+                    risks: [
+                        "<strong>Development Complexity:</strong> Building a robust recommendation engine (even a simple rule-based one) and a goal-setting feature requires significant development and testing effort.",
+                        "<strong>Choice Paralysis:</strong> Offering too many choices might overwhelm some users. The number of recommendations needs to be carefully calibrated (e.g., max 3).",
+                        "<strong>Cold Start Problem:</strong> New users or those with limited interaction data might receive less relevant recommendations initially. Default or popular paths might be needed as fallbacks.",
+                        "<strong>Content Gap:</strong> The system might recommend paths or topics for which sufficient advanced content doesn't yet exist, requiring content creation to keep pace with personalization capabilities."
+                    ]
+                },
+                exp2: {
+                    title: "'Learn & Earn' Streaks with Tangible (Virtual) Rewards",
+                    hypothesis: "Introducing a streak-based reward system tied to completing lessons/journeys and applying knowledge in the virtual trading simulator will increase short-term motivation, habit formation, and perceived value, leading to higher continuation rates for Learning Journeys.",
+                    target: "All users, but potentially more effective for users motivated by gamification, clear progress markers, and tangible rewards (this might include 'Quick Scanners' who need more incentive for deeper engagement or 'Strugglers' who benefit from positive reinforcement).",
+                    metrics: [
+                        "<strong>Primary:</strong> Percentage of users maintaining a 'learning streak' (e.g., completing at least one lesson or quiz) for 3+ consecutive days/sessions within a week.",
+                        "<strong>Secondary:</strong> Increase in the average number of journeys completed per user beyond Journey 2.",
+                        "<strong>Secondary:</strong> Increase in Daily Active Users (DAU) / Weekly Active Users (WAU).",
+                        "<strong>Secondary:</strong> Increased engagement with the virtual trading simulator, especially actions that can be linked to recently learned concepts (e.g., using a new analysis tool)."
+                    ],
+                    implementation: [
+                        "<strong>Streak Mechanic:</strong> Users build a 'Learning Streak' for completing a core learning activity (e.g., a lesson, a set of quizzes, a practice exercise) each day or every 2 days. Visual feedback for streak progress is crucial.",
+                        "<strong>Tiered Rewards:</strong>",
+                        "  - <em>Small, Frequent Rewards:</em> Virtual currency for the simulator, exclusive badges/flair, temporary access to 'premium' analytical tools for their virtual portfolio for short streaks (e.g., 3-day, 5-day).",
+                        "  - <em>Milestone Rewards:</em> Larger virtual currency bonuses, unlocking unique educational content (e.g., an expert Q&A video, an advanced strategy guide), or cosmetic upgrades for longer streaks (e.g., 7-day, 14-day, 30-day).",
+                        "<strong>Integration with Virtual Trading:</strong> Offer bonus virtual cash or points for successfully applying a newly learned metric or strategy in the simulator (e.g., 'You used the P/E ratio filter you just learned about! +500 virtual dollars.').",
+                        "<strong>Streak Protection (Optional):</strong> Offer 'streak freezes' (e.g., one per month) to prevent users from losing long streaks due to unavoidable missed days, reducing 'streak anxiety'."
+                    ],
+                    risks: [
+                        "<strong>Reward Inflation/Devaluation:</strong> The perceived value of rewards might diminish over time if not managed carefully or if they are too easy/hard to obtain. The in-app economy needs balancing.",
+                        "<strong>Focus on Extrinsic Motivation:</strong> Users might engage primarily for the rewards ('reward hacking') without deeply internalizing the knowledge. The link between learning and reward needs to be meaningful and reinforce learning goals.",
+                        "<strong>'Streak Anxiety' & Burnout:</strong> Some users might feel pressured to maintain streaks, leading to anxiety or burnout if they miss a day, potentially causing them to disengage entirely.",
+                        "<strong>Complexity in Tracking & Awarding:</strong> The system needs to be robust and fair in accurately tracking progress across various activities and delivering rewards promptly."
+                    ]
+                }
+            },
+            summary: {
+                title: "Case Study Summary: Re-engaging InvestSchool Users",
+                introduction: "This case study addressed the critical issue of user drop-off in the InvestSchool app after the initial learning journeys. The analysis involved diagnosing potential causes, segmenting users for targeted insights, and proposing data-driven experiments. Here's a recap of our findings and proposed path forward:",
+                points: [
+                    { icon: "📉", heading: "The Core Problem", text: "A significant decline in user engagement after the first 2–3 Learning Journeys, despite strong initial sign-ups and completion of the first journey. This indicates a failure to retain users beyond the initial novelty phase." },
+                    { icon: "🔍", heading: "Key Diagnostic Insights", text: "Potential causes are multifaceted, including: content becoming too overwhelming or difficult; a lack of perceived real-world value from later lessons; usability issues or poor user experience in advanced modules; Gen Z time constraints and competing priorities; insufficient personalization to match user interests or pace; and waning motivation due to inadequate rewards or recognition." },
+                    { icon: "🧩", heading: "Understanding Our Users", text: "Effective solutions require nuanced understanding. Segmentation into 'High Achievers vs. Strugglers,' 'Goal-Oriented Learners vs. Explorers,' and 'Quick Scanners vs. Deep Divers' allows for more targeted strategies that cater to different learning styles, motivations, and challenges." },
+                    { icon: "💡", heading: "Proposed Solutions & Experiments", text: "Two key A/B experiments were designed: 1) **Personalized 'Next Step' Recommendations & Goal Setting** aims to boost intrinsic motivation by making learning more relevant. 2) **'Learn & Earn' Streaks with Virtual Rewards** focuses on extrinsic motivation and habit formation through gamified incentives." },
+                    { icon: "🚀", heading: "The Path Forward", text: "The recommended approach involves systematic data collection to validate hypotheses, careful implementation and measurement of the proposed experiments, and a commitment to continuous iteration based on results. The ultimate goal is to create a learning environment that is engaging, valuable, and adaptive to the needs of Gen Z users, thereby improving long-term retention and learning outcomes." }
+                ]
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const navLinks = document.querySelectorAll('.nav-link');
+            const pages = document.querySelectorAll('.page-section');
+            const reasonsGrid = document.getElementById('reasons-grid');
+            const segmentTabsContainer = document.getElementById('segment-tabs');
+            const segmentContentContainer = document.getElementById('segment-content-container');
+            const exp1Btn = document.getElementById('exp1-btn');
+            const exp2Btn = document.getElementById('exp2-btn');
+            const experimentContentContainer = document.getElementById('experiment-content-container');
+            const summaryContentContainer = document.getElementById('summary-content-container');
+
+
+            let currentActiveSection = 'overview';
+
+            function setActiveNav(targetId) {
+                if (currentActiveSection === targetId && document.querySelector(`#${targetId}`).classList.contains('active-section')) {
+                     window.scrollTo({ top: 0, behavior: 'smooth' });
+                     return;
+                }
+
+                navLinks.forEach(link => {
+                    link.classList.toggle('active', link.dataset.target === targetId);
+                });
+                pages.forEach(page => {
+                    const isActive = page.id === targetId;
+                    if (isActive) {
+                        page.classList.remove('hidden');
+                        setTimeout(() => page.classList.add('active-section'), 10); 
+                    } else {
+                        page.classList.remove('active-section');
+                        // Only add hidden if it's not already hidden to prevent flicker on fast clicks
+                        if (!page.classList.contains('hidden')) {
+                           setTimeout(() => page.classList.add('hidden'), 510); // slightly longer than animation
+                        }
+                    }
+                });
+                currentActiveSection = targetId;
+                if (targetId === 'overview' && window.myFunnelChart) {
+                     setTimeout(() => window.myFunnelChart.resize(), 550); // Resize after transition
+                     setTimeout(() => window.myFunnelChart.update(), 560); // And update
+                }
+                 window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+
+            navLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    setActiveNav(link.dataset.target);
+                });
+            });
+
+            function createFunnelChart() {
+                const ctx = document.getElementById('funnelChart').getContext('2d');
+                if (window.myFunnelChart instanceof Chart) {
+                    window.myFunnelChart.destroy();
+                }
+                window.myFunnelChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Signed Up', 'Complete Journey 1', 'Start Journey 2', 'Start Journey 3', 'Start Journey 4+'],
+                        datasets: [{
+                            label: 'User Engagement (%)',
+                            data: [100, 85, 60, 35, 15],
+                            backgroundColor: [
+                                'rgba(14, 165, 233, 0.8)', 
+                                'rgba(59, 130, 246, 0.8)', 
+                                'rgba(99, 102, 241, 0.8)', 
+                                'rgba(139, 92, 246, 0.8)',
+                                'rgba(168, 85, 247, 0.8)' 
+                            ],
+                            borderColor: [
+                                'rgba(14, 165, 233, 1)',
+                                'rgba(59, 130, 246, 1)',
+                                'rgba(99, 102, 241, 1)',
+                                'rgba(139, 92, 246, 1)',
+                                'rgba(168, 85, 247, 1)'
+                            ],
+                            borderWidth: 2,
+                            borderRadius: 5,
+                            borderSkipped: false,
+                        }]
+                    },
+                    options: {
+                        indexAxis: 'y',
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            x: {
+                                beginAtZero: true,
+                                max: 105,
+                                grid: { display: false, drawBorder: false },
+                                ticks: {
+                                    font: { size: 13, family: 'Inter', weight: '500' },
+                                    color: '#475569', 
+                                    callback: function(value) { return value + '%' }
+                                }
+                            },
+                            y: {
+                                grid: { color: '#cbd5e1', borderDash: [3, 3] }, // slate-300
+                                ticks: {
+                                    font: { size: 14, family: 'Inter', weight: '600' },
+                                    color: '#1e293b' // slate-800
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                enabled: true,
+                                backgroundColor: '#0f172a', // slate-900
+                                titleFont: { size: 16, family: 'Inter', weight: 'bold' },
+                                bodyFont: { size: 14, family: 'Inter' },
+                                padding: 14,
+                                cornerRadius: 6,
+                                displayColors: false,
+                                titleMarginBottom: 8,
+                                bodySpacing: 4,
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.raw}%`;
+                                    }
+                                }
+                            }
+                        },
+                        animation: {
+                            duration: 1200,
+                            easing: 'easeOutExpo'
+                        }
+                    }
+                });
+            }
+
+            function renderDiagnosis() {
+                reasonsGrid.innerHTML = appData.diagnosis.map((reason, index) => `
+                    <div class="reason-card bg-white rounded-xl shadow-lg p-6 flex flex-col" data-index="${index}" style="animation-delay: ${index * 120}ms;">
+                        <div class="flex items-start mb-4">
+                            <span class="professional-icon mr-4 mt-0.5">${reason.icon}</span>
+                            <div>
+                                <h3 class="font-semibold text-xl text-slate-800">${reason.title}</h3>
+                            </div>
+                        </div>
+                        <p class="text-slate-600 text-sm leading-relaxed flex-grow mb-4">${reason.summary}</p>
+                        <button class="mt-auto text-sm text-sky-600 font-semibold self-start hover:text-sky-700 details-toggle-btn group flex items-center">
+                           Explore Data Points <span class="arrow transform inline-block transition-transform ml-1.5 group-hover:text-sky-700">▼</span>
+                        </button>
+                        <div class="details-panel mt-5 pt-5 border-t border-slate-200">
+                             <h4 class="font-semibold text-md text-slate-700 mb-3">Data Points & Behaviors to Analyze:</h4>
+                             <ul class="list-none space-y-3 text-slate-600 text-sm">
+                                ${reason.details.map(d => `<li class="pl-6 relative before:content-['▪'] before:absolute before:left-0 before:text-sky-500 before:text-xl before:top-[-3px]"><strong>${d.point}:</strong> ${d.desc}</li>`).join('')}
+                             </ul>
+                        </div>
+                    </div>
+                `).join('');
+                
+                reasonsGrid.addEventListener('click', (e) => {
+                    const button = e.target.closest('.details-toggle-btn');
+                    if (button) {
+                        const card = button.closest('.reason-card');
+                        const panel = card.querySelector('.details-panel');
+                        const arrow = button.querySelector('.arrow');
+                        panel.classList.toggle('open');
+                        arrow.classList.toggle('rotate-180', panel.classList.contains('open'));
+                    }
+                });
+            }
+            
+            function renderSegments() {
+                segmentTabsContainer.innerHTML = appData.segments.map((segment, index) => `
+                    <button class="tab-button segment-tab-btn px-5 py-3 font-semibold text-slate-600 hover:text-sky-700 border-b-2 border-transparent rounded-t-lg text-sm md:text-base transition-all duration-200 ${index === 0 ? 'active' : ''}" data-id="${segment.id}">
+                        ${segment.name}
+                    </button>
+                `).join('');
+                renderSegmentContent(appData.segments[0].id);
+
+                segmentTabsContainer.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('segment-tab-btn')) {
+                        const targetId = e.target.dataset.id;
+                        document.querySelectorAll('.segment-tab-btn').forEach(btn => btn.classList.remove('active'));
+                        e.target.classList.add('active');
+                        renderSegmentContent(targetId);
+                    }
+                });
+            }
+
+            function renderSegmentContent(segmentId) {
+                const segment = appData.segments.find(s => s.id === segmentId);
+                segmentContentContainer.innerHTML = `
+                    <div class="segment-content-item p-4 md:p-6">
+                        <h3 class="font-bold text-2xl md:text-3xl text-slate-800 mb-5">${segment.name}</h3>
+                        <p class="text-slate-600 mb-8 leading-relaxed md:text-lg">${segment.desc}</p>
+                        <div class="bg-sky-50 border-l-4 border-sky-500 p-6 rounded-r-lg shadow">
+                           <p class="font-semibold text-sky-800 text-lg md:text-xl mb-2">Strategic Rationale:</p>
+                           <p class="text-sky-700 leading-relaxed md:text-base">${segment.rationale}</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            function renderSolution(expKey) {
+                const solution = appData.solutions[expKey];
+                let implementationHtml = '';
+                if (solution.implementation && solution.implementation.length > 0) {
+                    implementationHtml = `
+                        <div>
+                            <h4 class="font-semibold text-slate-800 text-xl mb-3">🛠️ Implementation Sketch</h4>
+                            <ul class="list-none space-y-2.5 text-slate-600">
+                                ${solution.implementation.map(item => `<li class="pl-6 relative before:content-['▹'] before:absolute before:left-0 before:text-sky-500 before:font-bold before:text-lg">${item}</li>`).join('')}
+                            </ul>
+                        </div>`;
+                }
+
+                experimentContentContainer.innerHTML = `
+                    <div class="experiment-content-item">
+                        <h3 class="text-3xl font-bold text-slate-900 text-center mb-8">${solution.title}</h3>
+                        <div class="space-y-10">
+                            <div>
+                                <h4 class="font-semibold text-slate-800 text-xl mb-3">🎯 Hypothesis</h4>
+                                <p class="text-slate-600 leading-relaxed text-base">${solution.hypothesis}</p>
+                            </div>
+                            <div>
+                                <h4 class="font-semibold text-slate-800 text-xl mb-3">👥 Target Segment</h4>
+                                <p class="text-slate-600 leading-relaxed text-base">${solution.target}</p>
+                            </div>
+                            ${implementationHtml}
+                             <div>
+                                <h4 class="font-semibold text-slate-800 text-xl mb-3">📈 Success Metrics</h4>
+                                <ul class="list-none space-y-2.5 text-slate-600 text-base">
+                                    ${solution.metrics.map(m => `<li class="pl-6 relative before:content-['✔'] before:absolute before:left-0 before:text-green-500 before:text-lg">${m}</li>`).join('')}
+                                </ul>
+                            </div>
+                             <div>
+                                <h4 class="font-semibold text-slate-800 text-xl mb-3">⚠️ Risks & Tradeoffs</h4>
+                                <ul class="list-none space-y-2.5 text-slate-600 text-base">
+                                    ${solution.risks.map(r => `<li class="pl-6 relative before:content-['❗'] before:absolute before:left-0 before:text-amber-500 before:text-lg">${r}</li>`).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                exp1Btn.classList.toggle('active', expKey === 'exp1');
+                exp2Btn.classList.toggle('active', expKey === 'exp2');
+            }
+
+            function renderSummary() {
+                const summaryData = appData.summary;
+                summaryContentContainer.innerHTML = `
+                    <div class="summary-content-item space-y-8">
+                        <p class="text-slate-700 text-lg leading-relaxed">${summaryData.introduction}</p>
+                        ${summaryData.points.map(point => `
+                            <div class="p-5 bg-slate-100 rounded-lg shadow-sm">
+                                <h3 class="flex items-center text-xl font-semibold text-slate-800 mb-2">
+                                    <span class="text-2xl mr-3">${point.icon}</span>
+                                    ${point.heading}
+                                </h3>
+                                <p class="text-slate-600 leading-relaxed pl-9">${point.text}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            }
+            
+            exp1Btn.addEventListener('click', () => renderSolution('exp1'));
+            exp2Btn.addEventListener('click', () => renderSolution('exp2'));
+            
+            setActiveNav('overview');
+            createFunnelChart();
+            renderDiagnosis();
+            renderSegments();
+            renderSolution('exp1');
+            renderSummary(); 
+        });
+    </script>
+</body>
+</html>
