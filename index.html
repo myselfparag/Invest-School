@@ -10,10 +10,10 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Chosen Palette: Refined Slate & Sky with Energetic Accents -->
-    <!-- Application Structure Plan: A single-page dashboard with top navigation (`Overview`, `Diagnosis`, `Segments`, `Solutions`, `Summary`). This structure creates a narrative flow. Overview includes the problem statement and funnel chart. Diagnosis uses interactive cards. Segments use tabs. Solutions use toggles. Summary recaps the case. Professional theme with subtle gamification through engaging animations and clear interactive feedback. -->
+    <!-- Application Structure Plan: A single-page dashboard with top navigation (`Overview`, `Diagnosis`, `Segments`, `Solutions`, `Summary`). This structure creates a narrative flow. Overview includes the problem statement and funnel chart. Diagnosis uses interactive cards with `items-start` on the grid for stable layout. Segments use tabs. Solutions use toggles. Summary recaps the case. Professional theme with subtle gamification through engaging animations and clear interactive feedback. -->
     <!-- Visualization & Content Choices: 
         1. User Drop-off Funnel (Overview): Goal=Inform. Viz=Chart.js Bar Chart (styled as funnel). Interaction=None. Justification=Visualizes core problem.
-        2. Problem Diagnosis Cards (Diagnosis): Goal=Organize/Relate. Method=HTML/Tailwind cards + JS toggle. Interaction=Click to reveal details. Justification=Connects reasons to data analysis. Enhanced hover/reveal animations. Professional icons.
+        2. Problem Diagnosis Cards (Diagnosis): Goal=Organize/Relate. Method=HTML/Tailwind cards + JS toggle. Interaction=Click to reveal details. Justification=Connects reasons to data analysis. Enhanced hover/reveal animations. Professional icons. Grid uses `items-start` to prevent layout shifts.
         3. User Segments Tabs (Segments): Goal=Compare. Method=HTML/Tailwind tabs + JS content switching. Interaction=Click tab. Content fades in. Justification=Easy comparison of personas.
         4. Experiment Details (Solutions): Goal=Compare/Inform. Method=HTML/Tailwind layout + JS toggle. Interaction=Buttons to switch. Content fades in. Justification=Structured presentation of solutions.
         5. Summary Section (Summary): Goal=Summarize. Method=HTML/Tailwind text layout. Interaction=None. Justification=Provides a quick recap of the entire case study.
@@ -154,7 +154,7 @@
                     <h2 class="text-3xl md:text-4xl font-bold text-slate-900 mb-4">Why Are Users Leaving? Unpacking Potential Reasons</h2>
                     <p class="mt-2 text-slate-700 max-w-3xl mx-auto text-lg leading-relaxed">Multiple factors could be contributing to this drop-off. This section dissects leading hypotheses. Click on any potential reason to explore its nuances and the data points needed for validation.</p>
                 </div>
-                <div id="reasons-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10">
+                <div id="reasons-grid" class="grid md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-10 items-start">
                 </div>
             </section>
 
@@ -208,7 +208,7 @@
             diagnosis: [
                  {
                     title: "Content Overwhelm / Difficulty Spike",
-                    icon: "📖", // Unicode for open book
+                    icon: "📖", 
                     summary: "Initial journeys might be engaging and simple, but later content could become too complex too quickly. Users might feel the perceived effort outweighs the perceived benefit as topics get harder, leading to cognitive overload.",
                     details: [
                         { point: "Funnel Analysis", desc: "Track progression rates and drop-off points between specific journeys and modules. Identify if difficulty spikes correlate with drop-offs." },
@@ -218,7 +218,7 @@
                 },
                 {
                     title: "Lack of Perceived Value or Real-World Application",
-                    icon: "🎯", // Unicode for target / bullseye
+                    icon: "🎯", 
                     summary: "Users, especially Gen Z, need to see the immediate relevance of what they're learning. If later-stage topics don't clearly connect to their virtual trading goals or real-world understanding, motivation wanes.",
                     details: [
                         { point: "In-App Behavior", desc: "Track if users are applying concepts learned in later journeys within the virtual trading simulator. Is there a disconnect?" },
@@ -229,7 +229,7 @@
                 },
                 {
                     title: "Poor User Experience in Later Stages",
-                    icon: "🖥️", // Unicode for desktop computer (representing interface)
+                    icon: "🖥️", 
                     summary: "While initial UX might be polished, later stages could suffer from navigational difficulties, bugs, performance issues, or less engaging content formats (e.g., too much text, insufficient interactivity).",
                     details: [
                         { point: "Navigation Paths & Heatmaps", desc: "Identify user flows for later journeys. Are there dead ends, confusing navigation, or high exit rates on specific screens?" },
@@ -240,7 +240,7 @@
                 },
                 {
                     title: "Time Commitment & Competing Priorities",
-                    icon: "⏳", // Unicode for hourglass
+                    icon: "⏳", 
                     summary: "Gen Z users often have limited attention spans and juggle many interests. If later journeys demand significantly more time or if the initial curiosity is satisfied, they may de-prioritize the app.",
                     details: [
                         { point: "Session Data Analysis", desc: "Compare session length, frequency, and time-to-complete for users who progress versus those who drop off at later stages." },
@@ -250,7 +250,7 @@
                 },
                 {
                     title: "Lack of Personalization or Relevance",
-                    icon: "🎨", // Unicode for artist palette (representing tailoring/customization)
+                    icon: "�", 
                     summary: "A one-size-fits-all learning path might not cater to diverse user interests (e.g., specific industries, investment styles) or varying paces of learning. Users may disengage if content doesn't feel tailored.",
                     details: [
                         { point: "In-App Behavior (Feature Usage)", desc: "Analyze interaction with different stock types, sectors, or news categories within the app. Can we infer interests?" },
@@ -261,7 +261,7 @@
                 },
                 {
                     title: "Insufficient Motivation & Rewards",
-                    icon: "🌟", // Unicode for star (representing rewards/achievements)
+                    icon: "🌟", 
                     summary: "The initial 'hook' of completing the first journey might provide a sense of accomplishment, but if subsequent milestones lack adequate rewards, recognition, or a sense of progress, motivation can dwindle.",
                     details: [
                         { point: "Funnel Analysis (Milestone Mapping)", desc: "Identify points in the journey where explicit rewards or recognition are absent, and see if these correlate with drop-offs." },
@@ -384,16 +384,19 @@
                         setTimeout(() => page.classList.add('active-section'), 10); 
                     } else {
                         page.classList.remove('active-section');
-                        // Only add hidden if it's not already hidden to prevent flicker on fast clicks
                         if (!page.classList.contains('hidden')) {
-                           setTimeout(() => page.classList.add('hidden'), 510); // slightly longer than animation
+                           setTimeout(() => page.classList.add('hidden'), 510); 
                         }
                     }
                 });
                 currentActiveSection = targetId;
                 if (targetId === 'overview' && window.myFunnelChart) {
-                     setTimeout(() => window.myFunnelChart.resize(), 550); // Resize after transition
-                     setTimeout(() => window.myFunnelChart.update(), 560); // And update
+                     setTimeout(() => {
+                        if (window.myFunnelChart) { // Check again in case it was destroyed
+                            window.myFunnelChart.resize();
+                            window.myFunnelChart.update();
+                        }
+                     }, 550);
                 }
                  window.scrollTo({ top: 0, behavior: 'smooth' });
             }
@@ -452,10 +455,10 @@
                                 }
                             },
                             y: {
-                                grid: { color: '#cbd5e1', borderDash: [3, 3] }, // slate-300
+                                grid: { color: '#cbd5e1', borderDash: [3, 3] }, 
                                 ticks: {
                                     font: { size: 14, family: 'Inter', weight: '600' },
-                                    color: '#1e293b' // slate-800
+                                    color: '#1e293b' 
                                 }
                             }
                         },
@@ -463,7 +466,7 @@
                             legend: { display: false },
                             tooltip: {
                                 enabled: true,
-                                backgroundColor: '#0f172a', // slate-900
+                                backgroundColor: '#0f172a', 
                                 titleFont: { size: 16, family: 'Inter', weight: 'bold' },
                                 bodyFont: { size: 14, family: 'Inter' },
                                 padding: 14,
@@ -628,3 +631,4 @@
     </script>
 </body>
 </html>
+�
